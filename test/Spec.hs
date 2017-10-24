@@ -23,9 +23,11 @@ anotherSnake = Hs.Snake (Id 1) North (Coordinate 0 0) []
 
 snakeMovement :: IO ()
 snakeMovement = do
-  let steppedSnake = Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)]
-  let worldWithSteppedSnake = theEmptyWorld {snakes = [steppedSnake]}
+  let northSnake = Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)]
+  let worldWithSteppedSnake = theEmptyWorld {snakes = [northSnake]}
   equals (updateWorld worldWithNewSnake Step) worldWithSteppedSnake "All snakes should move"
+
+
 
 snakeTurning :: IO ()
 snakeTurning = do
