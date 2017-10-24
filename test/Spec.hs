@@ -23,11 +23,26 @@ anotherSnake = Hs.Snake (Id 1) North (Coordinate 0 0) []
 
 snakeMovement :: IO ()
 snakeMovement = do
-  let northSnake = Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)]
-  let worldWithSteppedSnake = theEmptyWorld {snakes = [northSnake]}
-  equals (updateWorld worldWithNewSnake Step) worldWithSteppedSnake "All snakes should move"
+  checkSnakeMovement
+    (Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+    (Hs.Snake (Id 0) North (Coordinate 5 3) [(Coordinate 5 4), (Coordinate 5 5)])
 
+  checkSnakeMovement
+    (Hs.Snake (Id 0) West (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+    (Hs.Snake (Id 0) West (Coordinate 4 4) [(Coordinate 5 4), (Coordinate 5 5)])
 
+  checkSnakeMovement
+    (Hs.Snake (Id 0) East (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+    (Hs.Snake (Id 0) East (Coordinate 6 4) [(Coordinate 5 4), (Coordinate 5 5)])
+
+  checkSnakeMovement
+    (Hs.Snake (Id 0) South (Coordinate 5 4) [(Coordinate 4 4)])
+    (Hs.Snake (Id 0) South (Coordinate 5 5) [(Coordinate 5 4)])
+
+  where checkSnakeMovement oldSnake newSnake = do
+          let oldWorld = theEmptyWorld {snakes = [oldSnake]}
+          let newWorld = theEmptyWorld {snakes = [newSnake]}
+          equals (updateWorld oldWorld Step) newWorld "All snakes should move"
 
 snakeTurning :: IO ()
 snakeTurning = do

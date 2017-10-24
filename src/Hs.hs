@@ -84,9 +84,9 @@ moveSnake snake = let newHead = calcNewHead snake
 calcNewHead :: Snake -> Coordinate
 calcNewHead (Snake _ currentDirection (Coordinate x' y')  _) = case currentDirection of
                                                       North -> Coordinate x' (y' - 1)
-                                                      South -> undefined
-                                                      West -> undefined
-                                                      East -> undefined
+                                                      West -> Coordinate (x' - 1) y'
+                                                      East -> Coordinate (x' + 1) y'
+                                                      South -> Coordinate x' (y' + 1)
 
 
 
