@@ -63,7 +63,7 @@ updateWorld world (AddSnake snake) = let oldSnakes = snakes world
                                      in world {snakes = newSnakes}
 
 updateWorld world (TurnSnake sid direction) = let oldSnakes = snakes world
-                                                  newSnakes = modifyElem (\snake -> (snakeId snake) == sid) (\snake -> snake { heading = direction}) oldSnakes 
+                                                  newSnakes = modifyElem (\snake -> (snakeId snake) == sid) (\snake -> snake { heading = direction}) oldSnakes
                                               in world {snakes = newSnakes}
 
 updateWorld world (RemoveSnake sid) = let oldSnakes = snakes world
