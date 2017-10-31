@@ -34,6 +34,7 @@ test-suite hs-test
   main-is:             Spec.hs
   build-depends:       base
                      , hs
+                     , hspec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   default-language:    Haskell2010
 

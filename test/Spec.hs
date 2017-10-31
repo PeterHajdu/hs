@@ -1,10 +1,5 @@
 import Hs
-
-equals :: Eq a => a -> a -> String -> IO ()
-equals left right message = let result = if left == right
-                                         then "SUCCESS"
-                                         else "FAIL"
-                            in putStrLn (message ++ " -> " ++ result)
+import Test.Hspec
 
 theEmptyWorld :: World
 theEmptyWorld = Hs.emptyWorld (Dimension 10 10)
@@ -21,43 +16,57 @@ worldWithSnakes = theEmptyWorld {snakes = [newSnake, anotherSnake]}
 anotherSnake :: Snake
 anotherSnake = Hs.Snake (Id 1) North (Coordinate 0 0) []
 
-snakeMovement :: IO ()
-snakeMovement = do
-  checkSnakeMovement
-    (Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
-    (Hs.Snake (Id 0) North (Coordinate 5 3) [(Coordinate 5 4), (Coordinate 5 5)])
 
-  checkSnakeMovement
-    (Hs.Snake (Id 0) West (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
-    (Hs.Snake (Id 0) West (Coordinate 4 4) [(Coordinate 5 4), (Coordinate 5 5)])
+snakeMovement :: Spec
+snakeMovement = describe "world step" $ do
+  describe "snakes move towards their heading" $ do
+    it "north" $ do
+      checkSnakeMovement
+        (Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+        (Hs.Snake (Id 0) North (Coordinate 5 3) [(Coordinate 5 4), (Coordinate 5 5)])
 
-  checkSnakeMovement
-    (Hs.Snake (Id 0) East (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
-    (Hs.Snake (Id 0) East (Coordinate 6 4) [(Coordinate 5 4), (Coordinate 5 5)])
+    it "west" $ do
+      checkSnakeMovement
+        (Hs.Snake (Id 0) West (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+        (Hs.Snake (Id 0) West (Coordinate 4 4) [(Coordinate 5 4), (Coordinate 5 5)])
 
-  checkSnakeMovement
-    (Hs.Snake (Id 0) South (Coordinate 5 4) [(Coordinate 4 4)])
-    (Hs.Snake (Id 0) South (Coordinate 5 5) [(Coordinate 5 4)])
+    it "east" $ do
+      checkSnakeMovement
+        (Hs.Snake (Id 0) East (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
+        (Hs.Snake (Id 0) East (Coordinate 6 4) [(Coordinate 5 4), (Coordinate 5 5)])
 
-  where checkSnakeMovement oldSnake newSnake = do
+    it "south" $ do
+      checkSnakeMovement
+        (Hs.Snake (Id 0) South (Coordinate 5 4) [(Coordinate 4 4)])
+        (Hs.Snake (Id 0) South (Coordinate 5 5) [(Coordinate 5 4)])
+
+  where checkSnakeMovement oldSnake snakeAfterStep = do
           let oldWorld = theEmptyWorld {snakes = [oldSnake]}
-          let newWorld = theEmptyWorld {snakes = [newSnake]}
-          equals (updateWorld oldWorld Step) newWorld "All snakes should move"
+          let newWorld = theEmptyWorld {snakes = [snakeAfterStep]}
+          (updateWorld oldWorld Step) `shouldBe` newWorld
 
-snakeTurning :: IO ()
-snakeTurning = do
-  let turnedSnake = Hs.Snake (Id 0) East (Coordinate 5 5) [(Coordinate 5 6), (Coordinate 4 6)]
-  let worldWithTurnedSnake = theEmptyWorld {snakes = [turnedSnake, anotherSnake]}
-  equals (updateWorld worldWithSnakes (TurnSnake (Id 0) East)) worldWithTurnedSnake "A snake should be turned east"
+snakeTurning :: Spec
+snakeTurning =
+  describe "snake turning" $ do
+    it "A snake should be turned east" $ do
+      let turnedSnake = Hs.Snake (Id 0) East (Coordinate 5 5) [(Coordinate 5 6), (Coordinate 4 6)]
+      let worldWithTurnedSnake = theEmptyWorld {snakes = [turnedSnake, anotherSnake]}
+      (updateWorld worldWithSnakes (TurnSnake (Id 0) East)) `shouldBe` worldWithTurnedSnake
 
-addingRemovingSnakes :: IO ()
-addingRemovingSnakes = do
-  equals (updateWorld theEmptyWorld (AddSnake newSnake)) worldWithNewSnake "NewSnake should be added to the world."
-  equals (updateWorld worldWithNewSnake (AddSnake newSnake)) worldWithNewSnake "NewSnake should be added only with unused id."
-  equals (updateWorld worldWithSnakes (RemoveSnake (snakeId anotherSnake))) worldWithNewSnake "NewSnake should be removed from the world."
+addingRemovingSnakes :: Spec
+addingRemovingSnakes =
+  describe "snake addition and removal to/from the world" $ do
+    it "adds a snake to the world" $ do
+      (updateWorld theEmptyWorld (AddSnake newSnake)) `shouldBe` worldWithNewSnake
+
+    it "adds a snake only with unused id" $ do
+      (updateWorld worldWithNewSnake (AddSnake newSnake)) `shouldBe` worldWithNewSnake
+
+    it "removes the snake with the given id" $ do
+      (updateWorld worldWithSnakes (RemoveSnake (snakeId anotherSnake))) `shouldBe` worldWithNewSnake
 
 main :: IO ()
-main = do
-  snakeMovement
+main = hspec $ do
   snakeTurning
   addingRemovingSnakes
+  snakeMovement
