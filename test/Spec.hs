@@ -19,7 +19,23 @@ anotherSnake = Hs.Snake (Id 1) North (Coordinate 0 0) []
 
 snakeMovement :: Spec
 snakeMovement = describe "world step" $ do
+  describe "snake that eats" $ do
+    it "grows" $ do
+      let apple = Apple (Coordinate 5 4)
+
+      let snake = Snake (Id 0) North (Coordinate 5 5) []
+      let biggerSnake = Snake (Id 0) North (Coordinate 5 4) [Coordinate 5 5]
+
+      checkEating
+        (Hs.World (Dimension 10 10) [snake] [apple])
+        (Hs.World (Dimension 10 10) [biggerSnake] [])
+
   describe "snakes move towards their heading" $ do
+    it "does not grow while moving" $ do
+      checkSnakeMovement
+        (Hs.Snake (Id 0) North (Coordinate 5 4) [])
+        (Hs.Snake (Id 0) North (Coordinate 5 3) [])
+
     it "north" $ do
       checkSnakeMovement
         (Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)])
@@ -40,7 +56,10 @@ snakeMovement = describe "world step" $ do
         (Hs.Snake (Id 0) South (Coordinate 5 4) [(Coordinate 4 4)])
         (Hs.Snake (Id 0) South (Coordinate 5 5) [(Coordinate 5 4)])
 
-  where checkSnakeMovement oldSnake snakeAfterStep = do
+  where checkEating oldWorld newWorld = do
+          (updateWorld oldWorld Step) `shouldBe` newWorld
+
+        checkSnakeMovement oldSnake snakeAfterStep = do
           let oldWorld = theEmptyWorld {snakes = [oldSnake]}
           let newWorld = theEmptyWorld {snakes = [snakeAfterStep]}
           (updateWorld oldWorld Step) `shouldBe` newWorld

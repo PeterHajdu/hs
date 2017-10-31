@@ -70,16 +70,23 @@ updateWorld world (RemoveSnake sid) = let oldSnakes = snakes world
                                           newSnakes = filter (\snake -> (snakeId snake) /= sid) oldSnakes
                                       in world {snakes = newSnakes}
 
-updateWorld world Step = let oldSnakes = snakes world
-                             newSnakes = map moveSnake oldSnakes
-                         in world {snakes = newSnakes}
+updateWorld world Step = moveSnakes world
 
 
-moveSnake :: Snake -> Snake
-moveSnake snake = let newHead = calcNewHead snake
-                      newTail = (shead snake) : (init (stail snake))
-                  in snake {shead = newHead, stail = newTail}
+moveSnakes :: World -> World
+moveSnakes world = let oldSnakes = snakes world
+                       newSnakes = map (moveOneSnake world) oldSnakes
+                       newSnakeHeads = (map shead newSnakes) :: [Coordinate]
+                       notEaten (Apple pos) = not $ elem pos newSnakeHeads
+                       leftOverApples = filter notEaten (apples world)
+                   in world {snakes = newSnakes, apples = leftOverApples}
 
+moveOneSnake :: World -> Snake -> Snake
+moveOneSnake world snake = let newHead = calcNewHead snake
+                               newTail = if (elem (Apple newHead) (apples world))
+                                         then (shead snake) : (stail snake)
+                                         else init $ (shead snake) : (stail snake)
+                           in snake {shead = newHead, stail = newTail}
 
 calcNewHead :: Snake -> Coordinate
 calcNewHead (Snake _ currentDirection (Coordinate x' y')  _) = case currentDirection of
