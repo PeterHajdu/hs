@@ -2,7 +2,7 @@ import Hs
 import Test.Hspec
 
 theEmptyWorld :: World
-theEmptyWorld = Hs.emptyWorld (Dimension 10 10)
+theEmptyWorld = Hs.emptyWorld (Dimension 10 20)
 
 newSnake :: Hs.Snake
 newSnake = Hs.Snake (Id 0) North (Coordinate 5 5) [(Coordinate 5 6), (Coordinate 4 6)]
@@ -19,6 +19,31 @@ anotherSnake = Hs.Snake (Id 1) North (Coordinate 0 0) []
 
 snakeMovement :: Spec
 snakeMovement = describe "world step" $ do
+  describe "collision with wall" $ do
+    let dim = dimension theEmptyWorld
+    it "north wall" $ checkWallCollision theEmptyWorld (Coordinate 3 0) North
+    it "west wall" $ checkWallCollision theEmptyWorld (Coordinate 0 2) West
+    it "east wall" $ checkWallCollision theEmptyWorld (Coordinate ((width dim) - 1) 2) East
+    it "south wall" $ checkWallCollision theEmptyWorld (Coordinate 2 ((height dim) - 1)) South
+
+  describe "colliding snakes" $ do
+    it "dies if it's head hits another snake" $ do
+      let oneStepBeforeDeath = theEmptyWorld {snakes =
+          [ newSnake
+          , Hs.Snake (Id 12) East (Coordinate 4 5) []
+          ]}
+      let snakesAfterDeath = snakes (updateWorld oneStepBeforeDeath Step)
+      let newSnakeAfterStep = Hs.Snake (Id 0) North (Coordinate 5 4) [(Coordinate 5 5), (Coordinate 5 6)]
+      snakesAfterDeath `shouldBe` [newSnakeAfterStep]
+
+    it "both snakes die on head collision" $ do
+      let oneStepBeforeDeath = theEmptyWorld {snakes =
+          [ newSnake
+          , Hs.Snake (Id 12) East (Coordinate 4 4) []
+          ]}
+      let snakesAfterDeath = snakes (updateWorld oneStepBeforeDeath Step)
+      snakesAfterDeath `shouldBe` []
+
   describe "snake that eats" $ do
     it "grows" $ do
       let apple = Apple (Coordinate 5 4)
@@ -63,6 +88,12 @@ snakeMovement = describe "world step" $ do
           let oldWorld = theEmptyWorld {snakes = [oldSnake]}
           let newWorld = theEmptyWorld {snakes = [snakeAfterStep]}
           (updateWorld oldWorld Step) `shouldBe` newWorld
+
+        checkWallCollision w snakeHead snakeHeading = do
+          let oneStepBeforeDeath = w {snakes =
+              [Hs.Snake (Id 12) snakeHeading snakeHead []]}
+          let snakesAfterDeath = snakes (updateWorld oneStepBeforeDeath Step)
+          snakesAfterDeath `shouldBe` []
 
 snakeTurning :: Spec
 snakeTurning =

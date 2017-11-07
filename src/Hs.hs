@@ -70,8 +70,28 @@ updateWorld world (RemoveSnake sid) = let oldSnakes = snakes world
                                           newSnakes = filter (\snake -> (snakeId snake) /= sid) oldSnakes
                                       in world {snakes = newSnakes}
 
-updateWorld world Step = moveSnakes world
+updateWorld world Step = (wallCollision.snakeCollision.moveSnakes) world
 
+wallCollision :: World -> World
+wallCollision w@(World (Dimension ww wh) oldSnakes _) = let outOfBounds (Snake _ _ (Coordinate hx hy) _)
+                                                              | hy < 0 = True
+                                                              | hx < 0 = True
+                                                              | hx >= ww = True
+                                                              | hy >= wh = True
+                                                              | otherwise = False
+                                                            newSnakes = filter (not.outOfBounds) oldSnakes
+                                                        in w {snakes = newSnakes}
+
+snakeCollision :: World -> World
+snakeCollision w = let oldSnakes = snakes w
+                       snakesOtherThan (Snake sid _ _ _) = filter (\snake -> (snakeId snake) /= sid) oldSnakes
+                       snakeCoordinates snakes' = do
+                         snake <- snakes'
+                         (shead snake):(stail snake)
+                       snakeCoordinatesExceptOwnHead snake otherSnakes = (stail snake)++(snakeCoordinates otherSnakes)
+                       isDead snake = elem (shead snake) (snakeCoordinatesExceptOwnHead snake (snakesOtherThan snake))
+                       newSnakes = filter (not.isDead) oldSnakes
+                    in w {snakes = newSnakes}
 
 moveSnakes :: World -> World
 moveSnakes world = let oldSnakes = snakes world
