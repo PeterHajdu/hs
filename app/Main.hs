@@ -6,6 +6,7 @@ import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM
 import Control.Concurrent
 import Control.Monad
+import Network.Socket
 
 data Colour =
     Red
@@ -134,18 +135,45 @@ inputSender chan = do
       inputSender chan
     Unknown -> inputSender chan
 
+clientLoop :: Int -> EventChan -> Socket -> IO ()
+clientLoop index chan sock = forever $ do
+  msg <- recv sock 1
+  case (charToInput (head msg)) of
+    (Turn direction) -> do
+      atomically $ writeTChan chan (TurnSnake (Id index) direction)
+    _ -> pure ()
+
+clientMain :: Int -> EventChan -> (Socket, SockAddr) -> IO ()
+clientMain clientIndex chan (sock, _) = do
+  atomically $ writeTChan chan (AddSnake (Snake (Id clientIndex) South (Coordinate (clientIndex + 1) (clientIndex+1)) []))
+  clientLoop clientIndex chan sock
+
+listeningLoop :: Int -> EventChan -> Socket -> IO ()
+listeningLoop clientCount chan sock = do
+  conn <- accept sock
+  forkIO $ clientMain clientCount chan conn
+  listeningLoop (clientCount + 1) chan sock
+
+networkThread :: EventChan -> IO ()
+networkThread chan = do
+  sock <- socket AF_INET Stream 0
+  setSocketOption sock ReuseAddr 1
+  bind sock (SockAddrInet 4242 iNADDR_ANY)
+  listen sock 2
+  listeningLoop 0 chan sock
 
 start :: Hs.World -> IO ()
 start world = do
   chan <- newTChanIO
-  forkIO $ worldUpdate chan world
-  forkIO $ stepSender chan
+  _ <- forkIO $ worldUpdate chan world
+  _ <- forkIO $ stepSender chan
+  _ <- forkIO $ networkThread chan
   inputSender chan
 
 main :: IO ()
 main = do
   setUpTerminal
   let snakes' = [(Snake (Id 0) East (Coordinate 10 5) [(Coordinate 9 5), (Coordinate 8 5), (Coordinate 7 5), (Coordinate 6 5)])]
-  let apples' = [(Apple (Coordinate 5 5)), (Apple (Coordinate 15 7))]
-  start (World (Dimension 20 20) snakes' apples')
+  let apples' = [ (Apple (Coordinate 5 5)), (Apple (Coordinate 15 7)), (Apple (Coordinate 14 7)), (Apple (Coordinate 13 7)), (Apple (Coordinate 12 7)), (Apple (Coordinate 11 7)), (Apple (Coordinate 10 10)), (Apple (Coordinate 9 9)), (Apple (Coordinate 16 8)) ]
+  start (World (Dimension 40 40) [] apples')
   tearDownTerminal

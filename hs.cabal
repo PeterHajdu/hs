@@ -27,6 +27,7 @@ executable hs
   build-depends:       base
                      , hs
                      , stm
+                     , network
   default-language:    Haskell2010
 
 test-suite hs-test
