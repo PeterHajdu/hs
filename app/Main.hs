@@ -2,6 +2,10 @@ module Main where
 
 import System.IO
 import Hs
+import Control.Concurrent.STM.TChan
+import Control.Concurrent.STM
+import Control.Concurrent
+import Control.Monad
 
 data Colour =
     Red
@@ -106,21 +110,42 @@ charToInput c = case c of
 getInput :: IO UserInput
 getInput =  charToInput <$> getChar
 
-loop :: Hs.World -> IO ()
-loop world = do
-  printWorld world
+type EventChan = TChan Event
+
+worldUpdate :: EventChan -> Hs.World -> IO ()
+worldUpdate chan world = do
+  event <- atomically $ readTChan chan
+  let newWorld = updateWorld world event
+  printWorld newWorld
+  worldUpdate chan newWorld
+
+stepSender :: EventChan -> IO ()
+stepSender chan = forever $ do
+  atomically $ writeTChan chan Step
+  threadDelay 500000
+
+inputSender :: EventChan -> IO ()
+inputSender chan = do
   input <- getInput
   case input of
     Quit -> pure ()
     (Turn direction) -> do
-      let newWorld = updateWorld (updateWorld world (TurnSnake (Id 0) direction)) Step
-      loop newWorld
-    Unknown -> loop (updateWorld world Step)
+      atomically $ writeTChan chan (TurnSnake (Id 0) direction)
+      inputSender chan
+    Unknown -> inputSender chan
+
+
+start :: Hs.World -> IO ()
+start world = do
+  chan <- newTChanIO
+  forkIO $ worldUpdate chan world
+  forkIO $ stepSender chan
+  inputSender chan
 
 main :: IO ()
 main = do
   setUpTerminal
   let snakes' = [(Snake (Id 0) East (Coordinate 10 5) [(Coordinate 9 5), (Coordinate 8 5), (Coordinate 7 5), (Coordinate 6 5)])]
   let apples' = [(Apple (Coordinate 5 5)), (Apple (Coordinate 15 7))]
-  loop (World (Dimension 20 20) snakes' apples')
+  start (World (Dimension 20 20) snakes' apples')
   tearDownTerminal
