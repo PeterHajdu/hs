@@ -53,6 +53,7 @@ data Event =
     TurnSnake Id Direction
   | Step
   | AddSnake Snake
+  | AddApple Apple
   | RemoveSnake Id deriving (Show)
 
 updateWorld :: World -> Event -> World
@@ -71,6 +72,8 @@ updateWorld world (RemoveSnake sid) = let oldSnakes = snakes world
                                       in world {snakes = newSnakes}
 
 updateWorld world Step = (wallCollision.snakeCollision.moveSnakes) world
+updateWorld world (AddApple apple) = let newApples = apple:(apples world)
+                                     in world {apples = newApples}
 
 wallCollision :: World -> World
 wallCollision w@(World (Dimension ww wh) oldSnakes _) = let outOfBounds (Snake _ _ (Coordinate hx hy) _)

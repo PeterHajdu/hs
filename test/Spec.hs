@@ -115,8 +115,17 @@ addingRemovingSnakes =
     it "removes the snake with the given id" $ do
       (updateWorld worldWithSnakes (RemoveSnake (snakeId anotherSnake))) `shouldBe` worldWithNewSnake
 
+addingApples :: Spec
+addingApples =
+  describe "adding apples" $ do
+    it "adds a new apple to the world" $ do
+      let newApple = Apple (Coordinate 3 2)
+      let worldWithApple = updateWorld theEmptyWorld (AddApple newApple)
+      (apples worldWithApple) `shouldBe` [newApple]
+
 main :: IO ()
 main = hspec $ do
   snakeTurning
   addingRemovingSnakes
+  addingApples
   snakeMovement
