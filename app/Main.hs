@@ -7,6 +7,7 @@ import Control.Concurrent.STM
 import Control.Concurrent
 import Control.Monad
 import Network.Socket
+import System.Random
 
 data Colour =
     Red
@@ -162,12 +163,23 @@ networkThread chan = do
   listen sock 2
   listeningLoop 0 chan sock
 
+appleSpawner :: Dimension -> StdGen -> EventChan -> IO ()
+appleSpawner dim@(Dimension w h) gen chan = do
+  let (x, newGen) = randomR (0, w) gen
+  let (y, newGen') = randomR (0, h) newGen
+  atomically $ writeTChan chan (AddApple (Apple (Coordinate x y)))
+  threadDelay 1000000
+  appleSpawner dim newGen' chan
+
 start :: Hs.World -> IO ()
 start world = do
   chan <- newTChanIO
   _ <- forkIO $ worldUpdate chan world
   _ <- forkIO $ stepSender chan
   _ <- forkIO $ networkThread chan
+
+  stdGen <- newStdGen
+  _ <- forkIO $ appleSpawner (dimension world) stdGen chan
   inputSender chan
 
 main :: IO ()

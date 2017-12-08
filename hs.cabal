@@ -28,6 +28,7 @@ executable hs
                      , hs
                      , stm
                      , network
+                     , random
   default-language:    Haskell2010
 
 test-suite hs-test
