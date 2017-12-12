@@ -81,7 +81,6 @@ printWorld :: World -> WorldChan -> IO ()
 printWorld world worldChan = do
   let newWorld = clearScreen ++ (printSnakes world) ++ (printApples world) ++ (printBorder world)
   atomically $ writeTChan worldChan newWorld
-  putStr $ newWorld
 
 data UserInput =
     Quit
