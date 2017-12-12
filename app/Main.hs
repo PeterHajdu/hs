@@ -77,9 +77,11 @@ printBorder (World (Dimension w h) _ _) =
   in (setColour White) ++ (foldMap (\c -> (moveCursor c) ++ "+" ) (upperBorder ++ lowerBorder ++ leftBorder ++ rightBorder))
 
 
-printWorld :: World -> IO ()
-printWorld world = do
-  putStr $ clearScreen ++ (printSnakes world) ++ (printApples world) ++ (printBorder world)
+printWorld :: World -> WorldChan -> IO ()
+printWorld world worldChan = do
+  let newWorld = clearScreen ++ (printSnakes world) ++ (printApples world) ++ (printBorder world)
+  atomically $ writeTChan worldChan newWorld
+  putStr $ newWorld
 
 data UserInput =
     Quit
@@ -99,13 +101,14 @@ getInput :: IO UserInput
 getInput =  charToInput <$> getChar
 
 type EventChan = TChan Event
+type WorldChan = TChan String
 
-worldUpdate :: EventChan -> Hs.World -> IO ()
-worldUpdate chan world = do
+worldUpdate :: EventChan -> WorldChan -> Hs.World -> IO ()
+worldUpdate chan worldChan world = do
   event <- atomically $ readTChan chan
   let newWorld = updateWorld world event
-  printWorld newWorld
-  worldUpdate chan newWorld
+  if event == Step then (printWorld newWorld worldChan) else pure ()
+  worldUpdate chan worldChan newWorld
 
 stepSender :: EventChan -> IO ()
 stepSender chan = forever $ do
@@ -130,24 +133,31 @@ clientLoop index chan sock = forever $ do
       atomically $ writeTChan chan (TurnSnake (Id index) direction)
     _ -> pure ()
 
-clientMain :: Int -> EventChan -> (Socket, SockAddr) -> IO ()
-clientMain clientIndex chan (sock, _) = do
+clientUpdateLoop :: WorldChan -> Socket -> IO ()
+clientUpdateLoop worldChan socket = forever $ do
+  world <- atomically $ readTChan worldChan
+  send socket world
+
+clientMain :: Int -> EventChan -> WorldChan -> (Socket, SockAddr) -> IO ()
+clientMain clientIndex chan worldChan (sock, _) = do
   atomically $ writeTChan chan (AddSnake (Snake (Id clientIndex) South (Coordinate (clientIndex + 1) (clientIndex+1)) []))
+  _ <- forkIO $ clientUpdateLoop worldChan sock
   clientLoop clientIndex chan sock
 
-listeningLoop :: Int -> EventChan -> Socket -> IO ()
-listeningLoop clientCount chan sock = do
+listeningLoop :: Int -> EventChan -> WorldChan -> Socket -> IO ()
+listeningLoop clientCount chan worldChan sock = do
   conn <- accept sock
-  forkIO $ clientMain clientCount chan conn
-  listeningLoop (clientCount + 1) chan sock
+  newchan <- atomically $ dupTChan worldChan
+  _ <- forkIO $ clientMain clientCount chan newchan conn
+  listeningLoop (clientCount + 1) chan worldChan sock
 
-networkThread :: EventChan -> IO ()
-networkThread chan = do
+networkThread :: EventChan -> WorldChan -> IO ()
+networkThread chan worldChan = do
   sock <- socket AF_INET Stream 0
   setSocketOption sock ReuseAddr 1
   bind sock (SockAddrInet 4242 iNADDR_ANY)
   listen sock 2
-  listeningLoop 0 chan sock
+  listeningLoop 0 chan worldChan sock
 
 appleSpawner :: Dimension -> StdGen -> EventChan -> IO ()
 appleSpawner dim@(Dimension w h) gen chan = do
@@ -160,9 +170,10 @@ appleSpawner dim@(Dimension w h) gen chan = do
 start :: Hs.World -> IO ()
 start world = do
   chan <- newTChanIO
-  _ <- forkIO $ worldUpdate chan world
+  worldChan <- atomically $ newBroadcastTChan
+  _ <- forkIO $ worldUpdate chan worldChan world
   _ <- forkIO $ stepSender chan
-  _ <- forkIO $ networkThread chan
+  _ <- forkIO $ networkThread chan worldChan
 
   stdGen <- newStdGen
   _ <- forkIO $ appleSpawner (dimension world) stdGen chan

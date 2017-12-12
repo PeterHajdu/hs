@@ -54,7 +54,7 @@ data Event =
   | Step
   | AddSnake Snake
   | AddApple Apple
-  | RemoveSnake Id deriving (Show)
+  | RemoveSnake Id deriving (Show, Eq)
 
 turnSnakeIfPossible :: Direction -> Snake -> Snake
 turnSnakeIfPossible South snake@(Snake _ _ (Coordinate _ hy) ((Coordinate _ ty):_)) = if hy < ty then snake else snake {heading = South}
