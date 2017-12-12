@@ -15,85 +15,71 @@ data Colour =
   | Green
   | Blue deriving (Eq)
 
-setColour :: Colour -> IO ()
-setColour c = do
+setColour :: Colour -> String
+setColour c =
   let code = case c of
                Red -> "31"
                White -> "97"
                Green -> "32"
                Blue -> "34"
-  putStr $ "\ESC[" ++ code ++ "m"
+  in "\ESC[" ++ code ++ "m"
 
-hideCursor :: IO ()
-hideCursor = putStr "\ESC[?25l"
+hideCursor :: String
+hideCursor = "\ESC[?25l"
 
-showCursor :: IO ()
-showCursor = putStr "\ESC[?25h"
+showCursor :: String
+showCursor = "\ESC[?25h"
 
-clearScreen :: IO ()
-clearScreen = putStr "\ESC[2J"
+clearScreen :: String
+clearScreen = "\ESC[2J"
 
 tearDownTerminal :: IO ()
 tearDownTerminal = do
-  clearScreen
-  showCursor
-  setColour White
+  putStr $ clearScreen ++ showCursor ++ (setColour White)
 
 setUpTerminal :: IO ()
 setUpTerminal = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   hSetEcho stdin False
-  hideCursor
+  putStr hideCursor
 
-moveCursor :: Coordinate -> IO ()
-moveCursor (Coordinate x' y') = putStr $ "\ESC[" ++ (show y') ++ ";" ++ (show x') ++ "H"
+moveCursor :: Coordinate -> String
+moveCursor (Coordinate x' y') = "\ESC[" ++ (show y') ++ ";" ++ (show x') ++ "H"
 
-printSnake :: Snake -> IO ()
+printSnake :: Snake -> String
 printSnake (Snake _ heading' h t) = do
   let headChar = case heading' of
                    West -> "<"
                    East -> ">"
                    North -> "^"
                    South -> "v"
-  moveCursor h
-  setColour Green
-  putStr headChar
-  setColour Blue
-  mapM_ (\c -> (moveCursor c >> putStr "O")) t
+  (moveCursor h) ++ (setColour Green) ++ headChar ++ (setColour Blue) ++ (foldMap (\c -> ((moveCursor c) ++ "O")) t)
 
-printSnakes :: World -> IO ()
+printSnakes :: World -> String
 printSnakes world = let ss = snakes world
-                    in mapM_ printSnake ss
+                    in foldMap printSnake ss
 
-printApple :: Apple -> IO ()
-printApple (Apple pos) = do
-  moveCursor pos
-  setColour Red
-  putStr "@"
+printApple :: Apple -> String
+printApple (Apple pos) = (moveCursor pos) ++ (setColour Red) ++ "@"
 
-printApples :: World -> IO ()
-printApples world = mapM_ printApple (apples world)
+printApples :: World -> String
+printApples world = foldMap printApple (apples world)
 
-printBorder :: World -> IO ()
-printBorder (World (Dimension w h) _ _) = do
+printBorder :: World -> String
+printBorder (World (Dimension w h) _ _) =
   let horizontal = [0..w]
-  let vertical = [0..h]
-  let upperBorder = map (\x' -> Coordinate x' 0) horizontal
-  let lowerBorder = map (\x' -> Coordinate x' h) horizontal
-  let leftBorder = map (\y' -> Coordinate 0 y') vertical
-  let rightBorder = map (\y' -> Coordinate w y') vertical
-
-  setColour White
-  mapM_ (\c -> moveCursor c >> putStr "+" ) (upperBorder ++ lowerBorder ++ leftBorder ++ rightBorder)
+      vertical = [0..h]
+      upperBorder = map (\x' -> Coordinate x' 0) horizontal
+      lowerBorder = map (\x' -> Coordinate x' h) horizontal
+      leftBorder = map (\y' -> Coordinate 0 y') vertical
+      rightBorder = map (\y' -> Coordinate w y') vertical
+  in (setColour White) ++ (foldMap (\c -> (moveCursor c) ++ "+" ) (upperBorder ++ lowerBorder ++ leftBorder ++ rightBorder))
 
 
 printWorld :: World -> IO ()
 printWorld world = do
-  clearScreen
-  printSnakes world
-  printApples world
-  printBorder world
+  putStr $ clearScreen ++ (printSnakes world) ++ (printApples world) ++ (printBorder world)
 
 data UserInput =
     Quit
