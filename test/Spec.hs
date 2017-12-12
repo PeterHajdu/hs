@@ -103,6 +103,34 @@ snakeTurning =
       let worldWithTurnedSnake = theEmptyWorld {snakes = [turnedSnake, anotherSnake]}
       (updateWorld worldWithSnakes (TurnSnake (Id 0) East)) `shouldBe` worldWithTurnedSnake
 
+    describe "tailless snake" $ do
+      it "should turn regardless of heading" $ do
+        let snake = Hs.Snake (Id 0) North (Coordinate 5 5) []
+        let worldWithSnake = theEmptyWorld {snakes = [snake]}
+        snakes (updateWorld worldWithSnake (TurnSnake (Id 0) South)) `shouldBe` [snake {heading = South}]
+
+    describe "snake with tail can not turn to itself" $ do
+      it "south" $ do
+        let snake = Hs.Snake (Id 0) North (Coordinate 5 5) [(Coordinate 5 6)]
+        let worldWithSnake = theEmptyWorld {snakes = [snake]}
+        snakes (updateWorld worldWithSnake (TurnSnake (Id 0) South)) `shouldBe` [snake]
+
+      it "north" $ do
+        let snake = Hs.Snake (Id 0) South (Coordinate 5 6) [(Coordinate 5 5)]
+        let worldWithSnake = theEmptyWorld {snakes = [snake]}
+        snakes (updateWorld worldWithSnake (TurnSnake (Id 0) North)) `shouldBe` [snake]
+
+      it "east" $ do
+        let snake = Hs.Snake (Id 0) West (Coordinate 5 6) [(Coordinate 6 6)]
+        let worldWithSnake = theEmptyWorld {snakes = [snake]}
+        snakes (updateWorld worldWithSnake (TurnSnake (Id 0) East)) `shouldBe` [snake]
+
+      it "west" $ do
+        let snake = Hs.Snake (Id 0) East (Coordinate 7 6) [(Coordinate 6 6)]
+        let worldWithSnake = theEmptyWorld {snakes = [snake]}
+        snakes (updateWorld worldWithSnake (TurnSnake (Id 0) West)) `shouldBe` [snake]
+
+
 addingRemovingSnakes :: Spec
 addingRemovingSnakes =
   describe "snake addition and removal to/from the world" $ do

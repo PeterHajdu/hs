@@ -56,6 +56,13 @@ data Event =
   | AddApple Apple
   | RemoveSnake Id deriving (Show)
 
+turnSnakeIfPossible :: Direction -> Snake -> Snake
+turnSnakeIfPossible South snake@(Snake _ _ (Coordinate _ hy) ((Coordinate _ ty):_)) = if hy < ty then snake else snake {heading = South}
+turnSnakeIfPossible North snake@(Snake _ _ (Coordinate _ hy) ((Coordinate _ ty):_)) = if hy > ty then snake else snake {heading = North}
+turnSnakeIfPossible East snake@(Snake _ _ (Coordinate hx _) ((Coordinate tx _):_)) = if hx < tx then snake else snake {heading = East}
+turnSnakeIfPossible West snake@(Snake _ _ (Coordinate hx _) ((Coordinate tx _):_)) = if hx > tx then snake else snake {heading = West}
+turnSnakeIfPossible dir snake = snake {heading = dir}
+
 updateWorld :: World -> Event -> World
 updateWorld world (AddSnake snake) = let oldSnakes = snakes world
                                          newSnakeId = snakeId snake
@@ -64,7 +71,7 @@ updateWorld world (AddSnake snake) = let oldSnakes = snakes world
                                      in world {snakes = newSnakes}
 
 updateWorld world (TurnSnake sid direction) = let oldSnakes = snakes world
-                                                  newSnakes = modifyElem (\snake -> (snakeId snake) == sid) (\snake -> snake { heading = direction}) oldSnakes
+                                                  newSnakes = modifyElem (\snake -> (snakeId snake) == sid) (turnSnakeIfPossible direction) oldSnakes
                                               in world {snakes = newSnakes}
 
 updateWorld world (RemoveSnake sid) = let oldSnakes = snakes world
