@@ -33,17 +33,6 @@ showCursor = "\ESC[?25h"
 clearScreen :: String
 clearScreen = "\ESC[2J"
 
-tearDownTerminal :: IO ()
-tearDownTerminal = do
-  putStr $ clearScreen ++ showCursor ++ (setColour White)
-
-setUpTerminal :: IO ()
-setUpTerminal = do
-  hSetBuffering stdin NoBuffering
-  hSetBuffering stdout NoBuffering
-  hSetEcho stdin False
-  putStr hideCursor
-
 moveCursor :: Coordinate -> String
 moveCursor (Coordinate x' y') = "\ESC[" ++ (show y') ++ ";" ++ (show x') ++ "H"
 
@@ -96,9 +85,6 @@ charToInput c = case c of
                   'k' -> Turn North
                   _ -> Unknown
 
-getInput :: IO UserInput
-getInput =  charToInput <$> getChar
-
 type EventChan = TChan Event
 type WorldChan = TChan String
 
@@ -113,16 +99,6 @@ stepSender :: EventChan -> IO ()
 stepSender chan = forever $ do
   atomically $ writeTChan chan Step
   threadDelay 500000
-
-inputSender :: EventChan -> IO ()
-inputSender chan = do
-  input <- getInput
-  case input of
-    Quit -> pure ()
-    (Turn direction) -> do
-      atomically $ writeTChan chan (TurnSnake (Id 0) direction)
-      inputSender chan
-    Unknown -> inputSender chan
 
 clientLoop :: Int -> EventChan -> Socket -> IO ()
 clientLoop index chan sock = forever $ do
@@ -175,13 +151,10 @@ start world = do
   _ <- forkIO $ networkThread chan worldChan
 
   stdGen <- newStdGen
-  _ <- forkIO $ appleSpawner (dimension world) stdGen chan
-  inputSender chan
+  appleSpawner (dimension world) stdGen chan
 
 main :: IO ()
 main = do
-  setUpTerminal
   let snakes' = [(Snake (Id 0) East (Coordinate 10 5) [(Coordinate 9 5), (Coordinate 8 5), (Coordinate 7 5), (Coordinate 6 5)])]
   let apples' = [ (Apple (Coordinate 5 5)), (Apple (Coordinate 15 7)), (Apple (Coordinate 14 7)), (Apple (Coordinate 13 7)), (Apple (Coordinate 12 7)), (Apple (Coordinate 11 7)), (Apple (Coordinate 10 10)), (Apple (Coordinate 9 9)), (Apple (Coordinate 16 8)) ]
   start (World (Dimension 40 40) [] apples')
-  tearDownTerminal
