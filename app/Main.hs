@@ -10,18 +10,42 @@ import Network.Socket
 import System.Random
 
 data Colour =
-    Red
-  | White
+    Black
+  | Red
   | Green
-  | Blue deriving (Eq)
+  | Yellow
+  | Blue
+  | Magenta
+  | Cyan
+  | White
+  | BrightBlack
+  | BrightRed
+  | BrightGreen
+  | BrightYellow
+  | BrightBlue
+  | BrightMagenta
+  | BrightCyan
+  | BrightWhite deriving (Eq)
 
 setColour :: Colour -> String
 setColour c =
   let code = case c of
+               Black -> "30"
                Red -> "31"
-               White -> "97"
                Green -> "32"
+               Yellow -> "33"
                Blue -> "34"
+               Magenta -> "35"
+               Cyan -> "36"
+               White -> "37"
+               BrightBlack -> "90"
+               BrightRed -> "91"
+               BrightGreen -> "92"
+               BrightYellow -> "93"
+               BrightBlue -> "94"
+               BrightMagenta -> "95"
+               BrightCyan -> "96"
+               BrightWhite -> "97"
   in "\ESC[" ++ code ++ "m"
 
 hideCursor :: String
@@ -36,14 +60,34 @@ clearScreen = "\ESC[2J"
 moveCursor :: Coordinate -> String
 moveCursor (Coordinate x' y') = "\ESC[" ++ (show y') ++ ";" ++ (show x') ++ "H"
 
+snakeColours :: [Colour]
+snakeColours =
+  [ Green
+  , Blue
+  , Yellow
+  , Magenta
+  , Cyan
+  , BrightBlack
+  , BrightRed
+  , BrightGreen
+  , BrightYellow
+  , BrightBlue
+  , BrightMagenta
+  , BrightCyan
+  , BrightWhite]
+
+snakeColour :: Id -> Colour
+snakeColour (Id index) = let numberOfColours = length snakeColours
+                          in snakeColours !! (index `mod` numberOfColours)
+
 printSnake :: Snake -> String
-printSnake (Snake _ heading' h t) = do
+printSnake (Snake snakeId heading' h t) = do
   let headChar = case heading' of
                    West -> "<"
                    East -> ">"
                    North -> "^"
                    South -> "v"
-  (moveCursor h) ++ (setColour Green) ++ headChar ++ (setColour Blue) ++ (foldMap (\c -> ((moveCursor c) ++ "O")) t)
+  (moveCursor h) ++ (setColour (snakeColour snakeId)) ++ headChar ++ (setColour Green) ++ (foldMap (\c -> ((moveCursor c) ++ "O")) t)
 
 printSnakes :: World -> String
 printSnakes world = let ss = snakes world
