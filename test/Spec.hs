@@ -21,8 +21,8 @@ snakeMovement :: Spec
 snakeMovement = describe "world step" $ do
   describe "collision with wall" $ do
     let dim = dimension theEmptyWorld
-    it "north wall" $ checkWallCollision theEmptyWorld (Coordinate 3 0) North
-    it "west wall" $ checkWallCollision theEmptyWorld (Coordinate 0 2) West
+    it "north wall" $ checkWallCollision theEmptyWorld (Coordinate 3 1) North
+    it "west wall" $ checkWallCollision theEmptyWorld (Coordinate 1 2) West
     it "east wall" $ checkWallCollision theEmptyWorld (Coordinate ((width dim) - 1) 2) East
     it "south wall" $ checkWallCollision theEmptyWorld (Coordinate 2 ((height dim) - 1)) South
 

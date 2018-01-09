@@ -84,8 +84,8 @@ updateWorld world (AddApple apple) = let newApples = apple:(apples world)
 
 wallCollision :: World -> World
 wallCollision w@(World (Dimension ww wh) oldSnakes _) = let outOfBounds (Snake _ _ (Coordinate hx hy) _)
-                                                              | hy < 0 = True
-                                                              | hx < 0 = True
+                                                              | hy <= 0 = True
+                                                              | hx <= 0 = True
                                                               | hx >= ww = True
                                                               | hy >= wh = True
                                                               | otherwise = False

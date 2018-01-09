@@ -10,7 +10,7 @@ import Network.Socket
 import System.Random
 
 worldDimension :: Dimension
-worldDimension = Dimension 40 40
+worldDimension = Dimension 40 30
 
 data Colour =
     Black
@@ -61,7 +61,7 @@ clearScreen :: String
 clearScreen = "\ESC[2J"
 
 moveCursor :: Coordinate -> String
-moveCursor (Coordinate x' y') = "\ESC[" ++ (show y') ++ ";" ++ (show x') ++ "H"
+moveCursor (Coordinate x' y') = "\ESC[" ++ (show (y' + 1)) ++ ";" ++ (show (x' + 1)) ++ "H"
 
 snakeColours :: [Colour]
 snakeColours =
@@ -167,7 +167,7 @@ clientMain clientIndex chan worldChan (sock, _) = do
     clientLoop clientIndex chan sock
   where
     startCoordinate :: Int -> Coordinate
-    startCoordinate index = Coordinate 1 ((index `mod` ((height worldDimension) - 2)) + 2)
+    startCoordinate index = Coordinate 1 ((index `mod` ((height worldDimension) - 1)) + 1)
 
 listeningLoop :: Int -> EventChan -> WorldChan -> Socket -> IO ()
 listeningLoop clientCount chan worldChan sock = do
