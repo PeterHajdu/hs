@@ -9,6 +9,9 @@ import Control.Monad
 import Network.Socket
 import System.Random
 
+worldDimension :: Dimension
+worldDimension = Dimension 40 40
+
 data Colour =
     Black
   | Red
@@ -159,9 +162,12 @@ clientUpdateLoop worldChan socket = forever $ do
 
 clientMain :: Int -> EventChan -> WorldChan -> (Socket, SockAddr) -> IO ()
 clientMain clientIndex chan worldChan (sock, _) = do
-  atomically $ writeTChan chan (AddSnake (Snake (Id clientIndex) South (Coordinate (clientIndex + 1) (clientIndex+1)) []))
-  _ <- forkIO $ clientUpdateLoop worldChan sock
-  clientLoop clientIndex chan sock
+    atomically $ writeTChan chan (AddSnake (Snake (Id clientIndex) East (startCoordinate clientIndex) []))
+    _ <- forkIO $ clientUpdateLoop worldChan sock
+    clientLoop clientIndex chan sock
+  where
+    startCoordinate :: Int -> Coordinate
+    startCoordinate index = Coordinate 1 ((index `mod` ((height worldDimension) - 2)) + 2)
 
 listeningLoop :: Int -> EventChan -> WorldChan -> Socket -> IO ()
 listeningLoop clientCount chan worldChan sock = do
@@ -201,4 +207,4 @@ main :: IO ()
 main = do
   let snakes' = [(Snake (Id 0) East (Coordinate 10 5) [(Coordinate 9 5), (Coordinate 8 5), (Coordinate 7 5), (Coordinate 6 5)])]
   let apples' = [ (Apple (Coordinate 5 5)), (Apple (Coordinate 15 7)), (Apple (Coordinate 14 7)), (Apple (Coordinate 13 7)), (Apple (Coordinate 12 7)), (Apple (Coordinate 11 7)), (Apple (Coordinate 10 10)), (Apple (Coordinate 9 9)), (Apple (Coordinate 16 8)) ]
-  start (World (Dimension 40 40) [] apples')
+  start (World worldDimension [] apples')
